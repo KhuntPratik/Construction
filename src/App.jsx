@@ -8,11 +8,9 @@ function App() {
   const [pricePerKg, setPricePerKg] = useState('');
   const [calculatedPrice, setCalculatedPrice] = useState(0);
   const [openCamera, setOpenCamera] = useState(false);
-  const [cameraFacingMode, setCameraFacingMode] = useState('environment');
   const [error, setError] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [zoom, setZoom] = useState(1);
-  const [torch, setTorch] = useState(false); // 🔦 torch control
 
   const lastScanResultRef = useRef(null);
   const videoRef = useRef(null);
@@ -62,14 +60,10 @@ function App() {
     window.open(url, '_blank');
   };
 
-  const toggleCameraFacingMode = () => {
-    setCameraFacingMode((prevMode) => prevMode === 'environment' ? 'user' : 'environment');
-  };
-
   const handleZoomIn = () => {
     setZoom(prev => {
       const newZoom = Math.min(prev + 0.5, 5);
-      applyCameraSettings(newZoom, torch);
+      applyCameraSettings(newZoom);
       return newZoom;
     });
   };
@@ -77,21 +71,12 @@ function App() {
   const handleZoomOut = () => {
     setZoom(prev => {
       const newZoom = Math.max(prev - 0.5, 1);
-      applyCameraSettings(newZoom, torch);
+      applyCameraSettings(newZoom);
       return newZoom;
     });
   };
 
-  const toggleTorch = () => {
-    setTorch(prev => {
-      const newTorchState = !prev;
-      applyCameraSettings(zoom, newTorchState);
-      return newTorchState;
-    });
-  };
-
-  // 🔥 Apply zoom and torch to camera
-  const applyCameraSettings = (newZoom, newTorch) => {
+  const applyCameraSettings = (newZoom) => {
     if (videoRef.current && videoRef.current.srcObject) {
       const [track] = videoRef.current.srcObject.getVideoTracks();
       if (track && track.getCapabilities) {
@@ -102,24 +87,18 @@ function App() {
           constraints.advanced = [{ zoom: newZoom }];
         }
 
-        if (capabilities.torch) {
-          constraints.advanced = constraints.advanced || [{}];
-          constraints.advanced[0].torch = newTorch;
-        }
-
         track.applyConstraints(constraints).catch(e => console.error('Error applying constraints', e));
       }
     }
   };
 
-  // 🛠️ when camera open, set videoRef manually
   useEffect(() => {
     if (openCamera) {
       const interval = setInterval(() => {
         const video = document.querySelector('video');
         if (video && video.srcObject) {
           videoRef.current = video;
-          applyCameraSettings(zoom, torch);
+          applyCameraSettings(zoom);
           clearInterval(interval);
         }
       }, 500);
@@ -143,26 +122,16 @@ function App() {
             <BarcodeScannerComponent
               width="100%"
               height={250}
-              facingMode={cameraFacingMode}
               onUpdate={(err, result) => {
                 if (result) {
                   lastScanResultRef.current = result.text;
                 }
               }}
-              videoConstraints={{
-                facingMode: cameraFacingMode,
-              }}
             />
 
             <div className="button-row">
-              <button className="btn toggle" onClick={toggleCameraFacingMode}>
-                🔄 Switch Camera
-              </button>
               <button className="btn zoom-in" onClick={handleZoomIn}>➕ Zoom In</button>
               <button className="btn zoom-out" onClick={handleZoomOut}>➖ Zoom Out</button>
-              <button className="btn torch" onClick={toggleTorch}>
-                {torch ? '🔦 Torch ON' : '💡 Torch OFF'}
-              </button>
               <button className="btn capture" onClick={handleCapture}>🎯 Capture Barcode</button>
               <button className="btn close" onClick={() => { setOpenCamera(false); setError(''); }}>
                 ❌ Close Camera
