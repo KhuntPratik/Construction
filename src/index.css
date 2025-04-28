@@ -1,0 +1,110 @@
+body {
+  background: #f7f9fc;
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+
+.container {
+  text-align: center;
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.btn {
+  background: #3498db;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  color: white;
+  font-size: 16px;
+  width: 100%;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn:hover {
+  background: #2980b9;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+input {
+  background: #ecf0f1;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  width: 100%;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row input {
+  flex: 1;
+}
+
+.scanner {
+  margin-bottom: 20px;
+}
+
+.calculated-price {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 10px;
+  color: green;
+}
+
+.error {
+  background: #ffcccc;
+  color: #c0392b;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* Specific button colors */
+.btn.open { background: #27ae60; }
+.btn.open:hover { background: #1e8449; }
+
+.btn.capture { background: #f39c12; }
+.btn.capture:hover { background: #e67e22; }
+
+.btn.close { background: #e74c3c; }
+.btn.close:hover { background: #c0392b; }
+
+.btn.calculate { background: #8e44ad; }
+.btn.calculate:hover { background: #71368a; }
+
+.btn.send { background: #2ecc71; }
+.btn.send:hover { background: #27ae60; }
+
+
+.btn.whatsapp {
+  background: #25D366;
+}
+.btn.whatsapp:hover {
+  background: #1ebe57;
+}
