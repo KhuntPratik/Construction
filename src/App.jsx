@@ -1,20 +1,23 @@
 import { useState, useRef } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
+
 function App() {
   const [scannedItem, setScannedItem] = useState('');
   const [quantity, setQuantity] = useState('');
   const [name, setName] = useState('');
   const [pricePerKg, setPricePerKg] = useState('');
   const [calculatedPrice, setCalculatedPrice] = useState(0);
-  const [openCamera, setOpenCamera] = useState(false)
+  const [openCamera, setOpenCamera] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState('environment');
   const [error, setError] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
-  
+  const [zoom, setZoom] = useState(1); // 👈 Zoom state
+
   const lastScanResultRef = useRef(null);
+  const videoRef = useRef(null); // 👈 To access video element
 
   const handleCalculate = () => {
     const qty = parseFloat(quantity) || 0;
-    const Name  = parseFloat(Name) || 0;
     const price = parseFloat(pricePerKg) || 0;
     setCalculatedPrice(qty * price);
   };
@@ -39,14 +42,14 @@ function App() {
     }
   };
 
-    const handleSendWhatsApp = () => {
-      if (!whatsappNumber) {
-        alert("Please enter a WhatsApp number.");
-        return;
-      }
+  const handleSendWhatsApp = () => {
+    if (!whatsappNumber) {
+      alert("Please enter a WhatsApp number.");
+      return;
+    }
 
     const message = `🧾 *Your Bill Details:*\n\n` +
-    `*Name:* ${name}\n` +
+      `*Name:* ${name}\n` +
       `*Item:* ${scannedItem}\n` +
       `*Quantity:* ${quantity}\n` +
       `*Price per Kg:* ₹${pricePerKg}\n` +
@@ -54,9 +57,51 @@ function App() {
       `Thank you for shopping with us!`;
 
     const phone = whatsappNumber.startsWith('+') ? whatsappNumber : `+91${whatsappNumber}`;
-
     const url = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
+  };
+
+  const toggleCameraFacingMode = () => {
+    setCameraFacingMode((prevMode) => prevMode === 'environment' ? 'user' : 'environment');
+  };
+
+  // 👉 Setup videoRef after component mounts
+  const handleVideoRef = (video) => {
+    if (video && video.srcObject) {
+      const [track] = video.srcObject.getVideoTracks();
+      if (track && track.getCapabilities) {
+        const capabilities = track.getCapabilities();
+        if (capabilities.zoom) {
+          track.applyConstraints({ advanced: [{ zoom }] });
+        }
+      }
+    }
+    videoRef.current = video;
+  };
+
+  const handleZoomIn = () => {
+    setZoom(prev => {
+      const newZoom = Math.min(prev + 0.5, 5); // max zoom 5x
+      applyZoom(newZoom);
+      return newZoom;
+    });
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => {
+      const newZoom = Math.max(prev - 0.5, 1); // min zoom 1x
+      applyZoom(newZoom);
+      return newZoom;
+    });
+  };
+
+  const applyZoom = (newZoom) => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const [track] = videoRef.current.srcObject.getVideoTracks();
+      if (track && track.getCapabilities && track.getCapabilities().zoom) {
+        track.applyConstraints({ advanced: [{ zoom: newZoom }] });
+      }
+    }
   };
 
   return (
@@ -75,18 +120,29 @@ function App() {
             <BarcodeScannerComponent
               width="100%"
               height={250}
+              facingMode={cameraFacingMode}
               onUpdate={(err, result) => {
                 if (result) {
                   lastScanResultRef.current = result.text;
                 }
               }}
+              videoConstraints={{
+                facingMode: cameraFacingMode,
+              }}
+              onLoaded={handleVideoRef} // 👈 get video ref
             />
             <div className="button-row">
+              <button className="btn toggle" onClick={toggleCameraFacingMode}>
+                🔄 Switch Camera
+              </button>
+              <button className="btn zoom-in" onClick={handleZoomIn}>➕ Zoom In</button>
+              <button className="btn zoom-out" onClick={handleZoomOut}>➖ Zoom Out</button>
               <button className="btn capture" onClick={handleCapture}>🎯 Capture Barcode</button>
               <button className="btn close" onClick={() => { setOpenCamera(false); setError(''); }}>
                 ❌ Close Camera
               </button>
             </div>
+            <p>🔍 Zoom Level: {zoom.toFixed(1)}x</p>
           </div>
         )}
 
