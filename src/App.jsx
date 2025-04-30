@@ -1,5 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
+import { jsPDF } from "jspdf";
+import firebase from 'firebase/app';
+import 'firebase/storage';
+
+// Firebase config (replace with your own Firebase configuration)
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-auth-domain",
+  projectId: "your-project-id",
+  storageBucket: "your-storage-bucket",
+  messagingSenderId: "your-messaging-sender-id",
+  appId: "your-app-id",
+};
+
+firebase.initializeApp(firebaseConfig);
 
 function App() {
   const [scannedItem, setScannedItem] = useState('');
@@ -21,31 +36,50 @@ function App() {
     setCalculatedPrice(qty * price);
   };
 
-  const handleSendToDatabase = () => {
-    const data = {
-      item: scannedItem,
-      quantity,
-      pricePerKg,
-      totalPrice: calculatedPrice,
-    };
-    console.log('Sending to database:', data);
+  const handleGeneratePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("🧾 Invoice", 20, 20);
+    doc.setFontSize(12);
+    doc.text(`Name: ${name}`, 20, 30);
+    doc.text(`Item: ${scannedItem}`, 20, 40);
+    doc.text(`Quantity: ${quantity}`, 20, 50);
+    doc.text(`Price per Kg: ₹${pricePerKg}`, 20, 60);
+    doc.text(`Total Price: ₹${calculatedPrice}`, 20, 70);
+    doc.text("Thank you for shopping with us!", 20, 80);
+
+    // Return PDF as a Blob for uploading later
+    const pdfBlob = doc.output('blob');
+    return pdfBlob;
   };
 
-  const handleCapture = () => {
-    if (lastScanResultRef.current) {
-      setScannedItem(lastScanResultRef.current);
-      setOpenCamera(false);
-      setError('');
-    } else {
-      setError('❌ No barcode detected. Please try again.');
+  const uploadPDFToFirebase = (pdfBlob) => {
+    const storageRef = firebase.storage().ref();
+    const pdfRef = storageRef.child('invoices/' + new Date().getTime() + '.pdf');
+    return pdfRef.put(pdfBlob);
+  };
+
+  const getPDFUrl = async (pdfBlob) => {
+    try {
+      const uploadTask = await uploadPDFToFirebase(pdfBlob);
+      const pdfUrl = await uploadTask.ref.getDownloadURL();
+      return pdfUrl;
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
     }
   };
 
-  const handleSendWhatsApp = () => {
+  const handleSendWhatsApp = async () => {
     if (!whatsappNumber) {
       alert("Please enter a WhatsApp number.");
       return;
     }
+
+    // Generate the PDF
+    const pdfBlob = handleGeneratePDF();
+
+    // Upload the PDF and get the URL
+    const pdfUrl = await getPDFUrl(pdfBlob);
 
     const message = `🧾 *Your Bill Details:*\n\n` +
       `*Name:* ${name}\n` +
@@ -53,7 +87,8 @@ function App() {
       `*Quantity:* ${quantity}\n` +
       `*Price per Kg:* ₹${pricePerKg}\n` +
       `*Total Price:* ₹${calculatedPrice}\n\n` +
-      `Thank you for shopping with us!`;
+      `Thank you for shopping with us!\n\n` +
+      `Download PDF: ${pdfUrl}`;
 
     const phone = whatsappNumber.startsWith('+') ? whatsappNumber : `+91${whatsappNumber}`;
     const url = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`;
@@ -144,29 +179,29 @@ function App() {
 
         {error && <p className="error">{error}</p>}
 
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Enter Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Scanned Item"
           value={scannedItem}
           onChange={(e) => setScannedItem(e.target.value)}
         />
 
         <div className="row">
-          <input 
-            type="number" 
+          <input
+            type="number"
             placeholder="Quantity"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
           />
-          <input 
-            type="number" 
+          <input
+            type="number"
             placeholder="Price / kg"
             value={pricePerKg}
             onChange={(e) => setPricePerKg(e.target.value)}
@@ -179,8 +214,8 @@ function App() {
           {calculatedPrice ? `✅ Total Price: ₹${calculatedPrice}` : ''}
         </div>
 
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="WhatsApp Number (without +91)"
           value={whatsappNumber}
           onChange={(e) => setWhatsappNumber(e.target.value)}
