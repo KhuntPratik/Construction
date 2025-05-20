@@ -130,6 +130,7 @@ function App() {
       return;
     }
 
+    
     const message = `🧾 *Your Bill Details:*\n\n` +
       `*Name:* ${name}\n` +
       `*Item:* ${scannedItem}\n` +
